@@ -59,7 +59,7 @@ def one_hot_matriz_para_letras(matriz_one_hot):
 
     return [letra for letra in lista_de_letras if letra is not None] # Remove os None, se preferir
 
-with open('dados\X.txt',"r") as arquivo:
+with open('data\X.txt',"r") as arquivo:
     entradas = []
     for linha in arquivo:
         numeros = []
@@ -70,7 +70,7 @@ with open('dados\X.txt',"r") as arquivo:
                 numeros.append(numero)
         entradas.append(numeros)
 
-with open('dados\Y_letra.txt',"r") as arquivo:
+with open('data\Y_letra.txt',"r") as arquivo:
     saidas = []
     for linha in arquivo:
         saidas.append(linha.strip())
@@ -93,4 +93,4 @@ parametros_treinados = treinamento_mlp_lento(entradas_treino,saidas_treino,120,6
 previsoes_treino = prever(entradas_teste, parametros_treinados)
 previsoes_binarias = (previsoes_treino >= 0.5).astype(int)
 acuracia_treino = np.mean(previsoes_binarias == saidas_teste.astype(int))
-print(f"Acurácia nos dados de treinamento: {acuracia_treino * 100:.2f}%")
+print(f"Acurácia nos data de treinamento: {acuracia_treino * 100:.2f}%")

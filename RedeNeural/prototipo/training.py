@@ -99,7 +99,7 @@ def treinamento_mlp_lento(X_treino, Y_treino, num_entrada, num_oculta, num_saida
             parametros = atualizar_parametros(parametros, grads, taxa_de_aprendizado)
             custo_medio_epoca = sum(custos_por_exemplo[-num_exemplos:]) / num_exemplos
             custos_medios.append(custo_medio_epoca)
-        if imprimir_custo and i % 10 == 0:
+        if imprimir_custo:
             # Calcula o custo médio da época (opcional, para acompanhamento)
             
             print(f"Custo médio após {i} iteracoes: {custo_medio_epoca:.6f}")
@@ -158,7 +158,7 @@ def backpropagation(parametros, cache, X, Y):
     A2 = cache["A2"]
     Z1 = cache["Z1"]
 
-    dZ2 = (A2 - Y) * sigmoid_derivada(A2)
+    dZ2 = A2 - Y
     dW2 = (1 / m) * np.dot(dZ2, A1.T)
     db2 = (1 / m) * np.sum(dZ2, axis=1, keepdims=True)
     dA1 = np.dot(W2.T, dZ2)
@@ -170,10 +170,12 @@ def backpropagation(parametros, cache, X, Y):
     return grads
 
 def atualizar_parametros(parametros, grads, taxa_de_aprendizado):
-    parametros_atualizados = {}
-    for chave in parametros:
-        parametros_atualizados[chave] = parametros[chave] - taxa_de_aprendizado * grads["d" + chave]
-    return parametros_atualizados
+    parametros["W1"] -= taxa_de_aprendizado * grads["dW1"]
+    parametros["b1"] -= taxa_de_aprendizado * grads["db1"]
+    parametros["W2"] -= taxa_de_aprendizado * grads["dW2"]
+    parametros["b2"] -= taxa_de_aprendizado * grads["db2"]
+    return parametros
+
 
 def prever(X, parametros):
     A2, cache = feedforward(X, parametros)
@@ -252,7 +254,7 @@ def treinamento_mlp_com_validacao(X_treino, Y_treino, X_val, Y_val, num_entrada,
         custo_valid = mean_squared_error(A2_val, Y_val)
         custos_val.append(custo_valid)
 
-        if imprimir_custo and i % 10 == 0:
+        if imprimir_custo:
             print(f"Época {i}, Custo Treino Médio: {custo_medio_epoca:.6f}, Custo Validação: {custo_valid:.6f}")
 
     print("Treinamento concluído (um exemplo por vez com validação)!")
