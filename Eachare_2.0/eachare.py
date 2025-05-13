@@ -142,6 +142,8 @@ def main():
         elif comando == '6':
             print("Comando nao implementado.")
         elif comando == '9':
+            for vizinho in peer['vizinhos']:
+                enviar_mensagem(peer,'BYE','',vizinho)
             print("Encerrando o servidor.")
             break
         else:

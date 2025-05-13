@@ -95,7 +95,7 @@ if entradas is not None and saidas_encoded is not None and len(entradas) == len(
 
         # 3. Hiperparâmetros
         taxa_aprendizado = 0.01
-        epocas = 100
+        epocas = 50
         # Vai passar cada entrada individualmente e atualizar pesos
         lote_tamanho = 1 
 
@@ -103,15 +103,15 @@ if entradas is not None and saidas_encoded is not None and len(entradas) == len(
         train_losses = []
         val_losses = []
 
-        # Função para criar lotees de dados
-        def create_lotees(X, y, lote_tamanho):
+        # Função para criar lotes de dados
+        def create_lotes(X, y, lote_tamanho):
             m = X.shape[0]
-            lotees = []
+            lotes = []
             for i in range(0, m, lote_tamanho):
                 X_lote = X[i:i + lote_tamanho]
                 y_lote = y[i:i + lote_tamanho]
-                lotees.append((X_lote, y_lote))
-            return lotees
+                lotes.append((X_lote, y_lote))
+            return lotes
 
         # 4. Loop de Treinamento
         for epoch in range(epocas):
@@ -119,14 +119,14 @@ if entradas is not None and saidas_encoded is not None and len(entradas) == len(
             np.random.shuffle(indices)
             X_train = X_train[indices]
             y_train = y_train[indices]
-            train_lotees = create_lotees(X_train, y_train, lote_tamanho)
+            train_lotes = create_lotes(X_train, y_train, lote_tamanho)
             total_train_loss = 0
 
-            for lote_inputs, lote_targets in train_lotees:
+            for lote_inputs, lote_targets in train_lotes:
                 train_loss = model.train_step(lote_inputs, lote_targets, taxa_aprendizado)
                 total_train_loss += train_loss
 
-            avg_train_loss = total_train_loss / len(train_lotees)
+            avg_train_loss = total_train_loss / len(train_lotes)
             train_losses.append(avg_train_loss)
 
             # 5. Validação

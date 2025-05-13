@@ -44,7 +44,10 @@ def conn_handler(peer, conexao, endereco):
             return
 
         incrementa_clock(peer, origem_info, origem_clock)
-        atualiza_status_peer(peer, origem_info, 'ONLINE',origem_clock)
+        if tipo == 'BYE':
+            atualiza_status_peer(peer, origem_info,'OFFLINE', origem_clock)
+        else:
+            atualiza_status_peer(peer, origem_info, 'ONLINE',origem_clock)
 
         resposta = gerar_resposta(peer, origem_info, tipo, args, conexao)
         if resposta:
