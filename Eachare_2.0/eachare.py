@@ -41,7 +41,7 @@ def exibir_menu():
     print("[5] Exibir estatisticas")
     print("[6] Alterar tamanho de chunk")
     print("[9] Sair")
-    escolha = input('>')
+    escolha = input('> ')
     return escolha
 
 def exibir_vizinhos(peer):
@@ -94,7 +94,6 @@ def buscar_arquivos_na_rede(peer: dict):
     """
     arquivos_da_rede = {} # Estrutura: { (nome_arquivo, tamanho): [peer_origem_1, peer_origem_2, ...] }
 
-    print("[REDE] Buscando arquivos nos vizinhos online...")
     for vizinho_info, vizinho_data in peer.get('vizinhos', {}).items():
         if vizinho_data.get('status') == 'ONLINE':
             print(f"[REDE] Solicitando lista de arquivos de {vizinho_info}...")
@@ -309,9 +308,19 @@ def exibir_estatisticas(peer):
 
 def alterar_chunk(peer):
     print('Digite novo tamanho de chunk:')
-    chunk = input('>')
+    chunk = input('> ')
     try:
         int_chunk = int(chunk)
+        if int_chunk == 0:
+            print("Tamanho do chunk não alterado!")
+            return
+        if int_chunk > 4096:
+            print("Tamanho do chunk não pode ser maior que 4096!")
+            return
+        if not np.log2(int_chunk).is_integer():
+            print("Tamanho do chunk deve ser uma potência de 2!")
+            return
+
         print(f'Tamanho de chunk alterado: {int_chunk}')
         peer['chunk'] = int_chunk
     except:
