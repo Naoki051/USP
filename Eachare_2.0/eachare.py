@@ -73,7 +73,8 @@ def exibir_vizinhos(peer):
 
 def get_peers(peer):
     vizinhos = peer['vizinhos']
-    for vizinho in vizinhos:
+    lista_vizinhos = list(vizinhos.keys())
+    for vizinho in lista_vizinhos:
         enviar_mensagem(peer,'GET_PEERS',[],vizinho)
 
 def exibir_arquivos_locais(peer):
