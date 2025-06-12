@@ -24,7 +24,7 @@ def adiciona_vizinho(peer, vizinho_info, vizinho_status, vizinho_clock):
 
     try:
         # Garante que o diretório exista antes de tentar abrir o arquivo
-        print(caminho_vizinhos)
+        os.makedirs(os.path.dirname(caminho_vizinhos), exist_ok=True)
         with open(caminho_vizinhos, 'a') as f:
             f.write(f'{vizinho_info}\n')
     except Exception as e:

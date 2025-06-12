@@ -4,7 +4,7 @@ from client import enviar_mensagem
 from server import iniciar_servidor
 import numpy as np
 import sys, os, threading, base64, time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import concurrent.futures
 
 def carregar_vizinhos(peer_info, vizinhos_path):
     dict_vizinhos = {}
@@ -73,8 +73,8 @@ def exibir_vizinhos(peer):
 
 def get_peers(peer):
     vizinhos = peer['vizinhos']
-    lista_vizinhos = list(vizinhos.keys())
-    for vizinho in lista_vizinhos:
+    lita_vizinhos = list(vizinhos)
+    for vizinho in lita_vizinhos:
         enviar_mensagem(peer,'GET_PEERS',[],vizinho)
 
 def exibir_arquivos_locais(peer):
@@ -164,101 +164,59 @@ def exibir_arquivos_da_rede(peer: dict, arquivos_da_rede: dict):
         except Exception as e:
             print(f"⚠️ Ocorreu um erro inesperado: {e}")
 
-def _download_chunk(peer, nome_arquivo, tam_chunk, index_chunk, peer_alvo):
-    """
-    Função auxiliar para baixar um único chunk de um peer específico.
-    """
-    args_msg = [nome_arquivo, str(tam_chunk), str(index_chunk)]
-    
-    try:
-        # Tenta baixar do peer específico que foi designado
-        dado_recebido = enviar_mensagem(peer, 'DL', args_msg, peer_alvo)
-        if dado_recebido and index_chunk in dado_recebido:
-            return (index_chunk, dado_recebido[index_chunk])
-        else:
-            print(f"[DOWNLOAD-CHUNK] Falha ao receber chunk {index_chunk} de {peer_alvo}.")
-            return None # Retorna None se este peer específico falhar
-            
-    except Exception as e:
-        print(f"[DOWNLOAD-CHUNK] Erro ao baixar chunk {index_chunk} de {peer_alvo}: {e}")
-        return None
 
 def requisitar_download(peer: dict, nome_arquivo: str, tam_arquivo: int, lista_de_peers: list):
-    """
-    Gerencia o processo de download paralelo de um arquivo, solicitando chunks a peers disponíveis
-    usando ThreadPoolExecutor.
-
-    Args:
-        peer (dict): Dicionário contendo as informações do peer local.
-                     Espera-se a chave 'chunk' para o tamanho do chunk padrão.
-        nome_arquivo (str): Nome do arquivo a ser baixado.
-        tam_arquivo (int): Tamanho total do arquivo em bytes.
-        lista_de_peers (list): Lista de strings de informação dos peers que possuem o arquivo.
-    """
     if not lista_de_peers:
         print(f"[DOWNLOAD] Erro: Não há peers disponíveis para baixar '{nome_arquivo}'.")
         return
 
-    tam_chunk_peer = peer.get('chunk')
+    tam_chunk = peer['chunk']
+    num_chunks = int(np.ceil(tam_arquivo / tam_chunk))
+    dados_completos_dict = {}  # Usar um dicionário para armazenar chunks por índice
 
-    total_chunks = int(np.ceil(tam_arquivo / tam_chunk_peer))
+    start = time.time()
 
-    dados_particionados = {} # Armazena os chunks recebidos: {indice_chunk: dados_base64}
-    chunks_baixados_count = 0
-    
-    start_time = time.time()
-    with ThreadPoolExecutor(max_workers=min(len(lista_de_peers), os.cpu_count() * 2)) as executor:
-        futures = []
-        for index_chunk in range(total_chunks):
-            current_chunk_size = min(tam_chunk_peer, tam_arquivo - (index_chunk * tam_chunk_peer))
-            peer_alvo = lista_de_peers[index_chunk % len(lista_de_peers)]
-            future = executor.submit(_download_chunk, peer, nome_arquivo, current_chunk_size, index_chunk, peer_alvo)
-            futures.append(future)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:  # Você pode ajustar max_workers
+        future_to_chunk_index = {
+            executor.submit(
+                enviar_mensagem,
+                peer,
+                'DL',
+                [nome_arquivo, str(tam_chunk), str(indice)],
+                lista_de_peers[indice % len(lista_de_peers)]
+            ): indice
+            for indice in range(num_chunks)
+        }
 
-        for future in as_completed(futures):
-            resultado_chunk = future.result()
-            
-            if resultado_chunk:
-                index, dados_b64 = resultado_chunk
-                dados_particionados[index] = dados_b64
-                chunks_baixados_count += 1
-            else:
-                print("[DOWNLOAD] Um chunk falhou ao ser baixado. O arquivo pode estar incompleto.")
-
-    if chunks_baixados_count != total_chunks:
-        print(f"[DOWNLOAD] Erro: Apenas {chunks_baixados_count} de {total_chunks} chunks foram baixados. Download incompleto.")
-        return
-    
-    end_time = time.time()
-    tempo_download = end_time - start_time
-
-    if (tam_chunk_peer,len(lista_de_peers),tam_arquivo) in peer['downloads']:
-        peer['downloads'][(tam_chunk_peer,len(lista_de_peers),tam_arquivo)].append(tempo_download)
-    else:
-        peer['downloads'][(tam_chunk_peer,len(lista_de_peers),tam_arquivo)] = [tempo_download]
-
-    lista_de_chunks_decodificados = []
-    for i in range(total_chunks):
-        chunk_b64 = dados_particionados.get(i) 
-        
-        if chunk_b64:
+        for future in concurrent.futures.as_completed(future_to_chunk_index):
+            indice = future_to_chunk_index[future]
             try:
-                chunk_decodificado = base64.b64decode(chunk_b64)
-                lista_de_chunks_decodificados.append(chunk_decodificado)
+                dados_recebidos = future.result()
+                if indice in dados_recebidos:
+                    dados_completos_dict[indice] = base64.b64decode(dados_recebidos[indice])
+                    print(f"[DOWNLOAD] Chunk {indice+1}/{num_chunks} baixado com sucesso.")
+                else:
+                    print(f"[DOWNLOAD] Erro: Chunk {indice+1}/{num_chunks} não encontrado nos dados recebidos.")
             except Exception as e:
-                print(f"[DOWNLOAD] Erro ao decodificar chunk {i}: {e}. O arquivo pode estar corrompido.")
-                return # Aborta a reconstrução
+                print(f"[DOWNLOAD] Erro ao baixar chunk {indice+1}/{num_chunks}: {e}")
+    end = time.time()
+    tempo = end-start
+    # Reconstruir os dados completos na ordem correta
+    dados_completos = b''
+    if not (tam_chunk,len(lista_de_peers),tam_arquivo) in peer['downloads']:
+        peer['downloads'][(tam_chunk,len(lista_de_peers),tam_arquivo)] = [tempo]
+    else:
+        peer['downloads'][(tam_chunk,len(lista_de_peers),tam_arquivo)].append(tempo)
+    for i in range(num_chunks):
+        if i in dados_completos_dict:
+            dados_completos += dados_completos_dict[i]
         else:
-            print(f"[DOWNLOAD] Erro fatal: Chunk {i} ausente. O arquivo não pode ser remontado.")
-            return # Aborta a reconstrução
+            print(f"[DOWNLOAD] Aviso: Chunk {i+1}/{num_chunks} está faltando. O arquivo pode estar incompleto.")
+            return False # Indicar falha se houver chunks faltando
 
-    # Une todos os chunks da lista de uma só vez. É extremamente rápido.
-    dados_completos_bytes = b''.join(lista_de_chunks_decodificados)
-            
-    if len(dados_completos_bytes) != tam_arquivo:
-        print(f"[DOWNLOAD] Aviso: Tamanho do arquivo remontado ({len(dados_completos_bytes)} bytes) difere do tamanho esperado ({tam_arquivo} bytes). O arquivo pode estar incompleto ou corrompido.")
+    salvar_arquivo(peer, nome_arquivo, dados_completos)
+    return True
 
-    salvar_arquivo(peer, nome_arquivo, dados_completos_bytes)
 
 def salvar_arquivo(peer: dict, nome: str, dados_completos: bytes):
     """
