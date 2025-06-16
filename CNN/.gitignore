@@ -1,0 +1,36 @@
+# Arquivo .gitignore para projetos Python com Foco em Machine Learning
+
+# Ambientes Virtuais
+# Ignora a pasta do ambiente virtual para não enviar todas as bibliotecas para o repositório.
+venv/
+.venv/
+env/
+.env/
+
+# Arquivos de Cache e Bytecode do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Diretórios de Resultados Gerados
+# IMPORTANTE: Ignora a pasta onde todos os resultados dos experimentos são salvos.
+# Isso evita que arquivos de log, pesos de modelo, gráficos, etc., sejam versionados.
+results/
+
+# Arquivos de IDE e Editores de Código
+.vscode/
+.idea/
+*.swp
+
+# Arquivos de Sistema Operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de Notebooks Jupyter
+.ipynb_checkpoints
+
+# Arquivos de dependências (se você gerar localmente)
+dist/
+build/
+*.egg-info/
