@@ -40,8 +40,9 @@ def atualiza_vizinho(peer, vizinho_info, vizinho_clock, vizinho_status):
     vizinho_existente = vizinhos[vizinho_info]
     if vizinho_existente['clock'] > vizinho_clock:
         return
+    vizinho_existente['clock'] = vizinho_clock
     if vizinho_existente['status'] == vizinho_status:
         return
     print(f'Atualizando status vizinho "{vizinho_info}" para {vizinho_status}')
-    vizinho_existente['clock'] = vizinho_clock
+    
     vizinho_existente['status'] = vizinho_status
