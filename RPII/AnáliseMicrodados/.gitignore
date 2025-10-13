@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+venv/
+.venv/
+.vscode/
+MICRODADOS_CADASTRO_CURSOS_2024.CSV
