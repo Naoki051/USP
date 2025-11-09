@@ -3,7 +3,6 @@ import os
 import glob
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from sklearn.model_selection import train_test_split
-# --- MUDANÇA 1: Importar LabelEncoder ---
 from sklearn.preprocessing import StandardScaler, OrdinalEncoder, LabelEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -21,12 +20,12 @@ import time
 
 
 # --- Configurações de Diretório ---
-INPUT_DIR = 'microdados_filtrados_simples'
-OUTPUT_DIR_ANALISE = 'analise_classificacao_simples'
+INPUT_DIR = 'microdados_filtrados'
+OUTPUT_DIR_ANALISE = 'analise_classificacao'
 os.makedirs(OUTPUT_DIR_ANALISE, exist_ok=True)
 
 
-# ------------------ FUNÇÃO DE ALVO (Sem alterações) ------------------
+# ------------------ FUNÇÃO DE ALVO (Sem alterações principais) ------------------
 
 def criar_alvo_quartil_risco(df: pd.DataFrame) -> Tuple[pd.DataFrame, Tuple[float, float, float]]:
     """
@@ -73,18 +72,13 @@ def criar_alvo_quartil_risco(df: pd.DataFrame) -> Tuple[pd.DataFrame, Tuple[floa
     return df_clean, (q1, q2, q3)
 
 
-# ------------------ FEATURE IMPORTANCE (Sem alterações) ------------------
+# ------------------ FEATURE IMPORTANCE ------------------
 
 def get_feature_importances(pipeline: Pipeline, feature_names: List[str]) -> pd.DataFrame:
-    """
-    Extrai e mapeia a importância das features de um modelo.
-    """
     try:
         model = pipeline.named_steps['model']
         if not hasattr(model, "feature_importances_"):
-            # 'LogisticRegression' usa 'coef_'
             if hasattr(model, "coef_"):
-                # Pega a importância absoluta média entre as classes
                 importances = np.mean(np.abs(model.coef_), axis=0)
             else:
                 print(f"⚠️ Modelo '{type(model).__name__}' não fornece importâncias de features.")
@@ -97,7 +91,6 @@ def get_feature_importances(pipeline: Pipeline, feature_names: List[str]) -> pd.
             .sort_values(by='Importance', ascending=False)
             .reset_index(drop=True)
         )
-
         print("   ✅ Importâncias de features extraídas com sucesso.")
         return df_importance
 
@@ -106,7 +99,7 @@ def get_feature_importances(pipeline: Pipeline, feature_names: List[str]) -> pd.
         return pd.DataFrame()
 
 
-# ------------------ TREINAMENTO DE CLASSIFICADORES (Com Correção) ------------------
+# ------------------ TREINAMENTO DE CLASSIFICADORES ------------------
 
 def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
     print("\n🔹 [2/3] Iniciando treinamento dos modelos de classificação...\n")
@@ -116,21 +109,13 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
     if TARGET_COLUMN not in df.columns:
         raise ValueError(f"❌ Coluna '{TARGET_COLUMN}' não encontrada no DataFrame.")
 
-    # --- MUDANÇA 2: Aplicar LabelEncoder no 'y' ---
     y_strings = df[TARGET_COLUMN]
     X = df.drop(columns=[TARGET_COLUMN]).copy()
 
-    # Codifica o 'y' de strings para inteiros (ex: 0, 1, 2, 3)
-    # Isso é necessário para o XGBoost.
     le = LabelEncoder()
     y = le.fit_transform(y_strings)
-    
-    # Imprime o mapeamento para sabermos o que o XGBoost está vendo
     print(f"   ➤ Codificando o alvo (y): {list(le.classes_)} -> {list(le.transform(le.classes_))}")
-    # --- Fim da Mudança ---
 
-
-    # --- Classificação de colunas ---
     print("⚙️ Classificando variáveis (numéricas x categóricas)...")
     colunas_numericas = []
     colunas_categoricas = []
@@ -150,7 +135,6 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
     for c in colunas_categoricas:
         X[c] = X[c].astype(str)
 
-    # --- Pipelines ---
     numeric_pipeline = Pipeline([
         ('imputer', SimpleImputer(strategy='constant', fill_value=0)),
         ('scaler', StandardScaler())
@@ -165,14 +149,9 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
         X, y, test_size=0.2, random_state=42, stratify=y
     )
     
-    # Mapeia as classes (y_test) de volta para strings para o ROC-AUC
-    # Isso é necessário porque y_proba terá 4 colunas, e o roc_auc_score
-    # no modo multiclasse 'ovr' lida melhor com as labels originais.
     y_test_strings = le.inverse_transform(y_test)
     
-
     modelos = {
-        # 🌲 Random Forest
         'RandomForest': RandomForestClassifier(
             n_estimators=200,
             random_state=42,
@@ -181,8 +160,6 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
             max_depth=15,
             min_samples_leaf=5
         ),
-
-        # 🧠 Rede Neural
         'MLP': MLPClassifier(
             hidden_layer_sizes=(128, 64),
             activation='tanh',
@@ -191,8 +168,6 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
             random_state=42,
             alpha=0.001
         ),
-
-        # 📈 Regressão Logística
         'LogisticRegression': LogisticRegression(
             random_state=42,
             solver='lbfgs',
@@ -200,8 +175,6 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
             max_iter=5000,
             C=0.1
         ),
-
-        # ⚡ XGBoost (Corrigido)
         'XGBoost': XGBClassifier(
             n_estimators=300,
             learning_rate=0.05,
@@ -210,10 +183,7 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
             colsample_bytree=0.8,
             random_state=42,
             n_jobs=-1
-            # 'eval_metric' e 'use_label_encoder' removidos
         ),
-
-        # 💡 LightGBM (Corrigido)
         'LightGBM': LGBMClassifier(
             n_estimators=300,
             learning_rate=0.05,
@@ -224,7 +194,7 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
             class_weight='balanced',
             random_state=42,
             n_jobs=-1,
-            verbose=-1 # Adicionado para suprimir avisos
+            verbose=-1
         )
     }
 
@@ -234,16 +204,11 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
         print(f"\n🚀 Treinando modelo: {nome}...")
         pipe = Pipeline([('preprocess', preprocessor), ('model', modelo)])
         t0 = time.time()
-
-        # Treina com 'y' numérico (0, 1, 2, 3)
         pipe.fit(X_train, y_train) 
         duracao = time.time() - t0
         print(f"   ✅ Modelo '{nome}' treinado em {duracao:.2f}s.")
 
-        # Prevê 'y' numérico (0, 1, 2, 3)
         y_pred = pipe.predict(X_test)
-        
-        # Para métricas, podemos comparar y_test (numérico) com y_pred (numérico)
         acc = accuracy_score(y_test, y_pred)
         precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
         recall = recall_score(y_test, y_pred, average='weighted', zero_division=0)
@@ -251,7 +216,6 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
 
         try:
             y_proba = pipe.predict_proba(X_test)
-            # Compara as labels de string (ex: 'alto risco') com as probabilidades
             auc = roc_auc_score(y_test_strings, y_proba, multi_class='ovr', average='weighted', labels=le.classes_)
         except Exception as e:
             print(f"   ⚠️ Não foi possível calcular ROC-AUC para {nome}: {e}")
@@ -265,8 +229,7 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
             'ROC-AUC (weighted, ovr)': auc,
             'modelo': pipe
         }
-        
-        # Lógica de extração de importância atualizada
+
         if hasattr(modelo, "feature_importances_") or hasattr(modelo, "coef_"):
             imp = get_feature_importances(pipe, colunas_numericas + colunas_categoricas)
             if imp is not None and not imp.empty:
@@ -274,11 +237,11 @@ def treinar_classificadores_evasao(df: pd.DataFrame) -> Dict[str, Any]:
                 print(f"\n⭐ Top 5 Features mais relevantes ({nome}):")
                 print(imp.head(5).to_markdown(index=False))
 
-
     print(f"\n🧩 Treinamento concluído em {time.time() - start_time:.2f}s total.\n")
     return resultados
 
-# ------------------ MAIN (Sem alterações) ------------------
+
+# ------------------ MAIN ------------------
 
 def main():
     print("=" * 60)
@@ -288,17 +251,16 @@ def main():
     all_files = glob.glob(os.path.join(INPUT_DIR, "*.csv"))
     if not all_files:
         print(f"❌ Nenhum arquivo CSV encontrado em '{INPUT_DIR}'.")
-        print("   ➤ Certifique-se de que o diretório contém os arquivos de microdados filtrados.")
         return
 
     print(f"\n📂 Encontrados {len(all_files)} arquivos CSV em '{INPUT_DIR}':")
     for f in all_files:
         print(f"   - {os.path.basename(f)}")
 
-    resultados_gerais = []       # Lista para consolidar métricas de todos os arquivos
-    importancias_gerais = []     # Lista para consolidar importâncias de features
+    resultados_gerais = []
+    importancias_gerais = []
+    medianas_por_dataset = []  # 🔶 NOVO: armazenar quartis
 
-    # Processa cada arquivo individualmente
     for f in all_files:
         print(f"\n{'-'*60}")
         print(f"📄 Processando arquivo: {os.path.basename(f)}")
@@ -311,22 +273,20 @@ def main():
             continue
 
         if df.empty:
-            print("⚠️ Arquivo vazio — pulando para o próximo.")
+            print("⚠️ Arquivo vazio — pulando.")
             continue
-            
-        # # --- AVISO DE DATA LEAKAGE (Adicionado por responsabilidade) ---
-        # features_com_leakage = [col for col in df.columns if '_MAT' in col or '_CONC' in col]
-        # if features_com_leakage:
-        #     print("\n" + "!"*60)
-        #     print("⚠️ AVISO DE DATA LEAKAGE (VAZAMENTO DE DADOS) ⚠️")
-        #     print("  Este arquivo contém features baseadas em 'QT_MAT' e 'QT_CONC'.")
-        #     print("  Para um modelo preditivo real, elas devem ser removidas do 'filtrar.py'.")
-        #     print("!"*60)
-        # # --- FIM DO AVISO ---
 
         try:
-            # 1️⃣ Criar variável alvo
+            # 1️⃣ Criar variável alvo e obter quartis
             df_proc, quartis = criar_alvo_quartil_risco(df)
+            q1, q2, q3 = quartis
+            medianas_por_dataset.append({  # 🔶 NOVO
+                'Arquivo': os.path.basename(f),
+                'Q1 (25%)': q1,
+                'Q2 (50%)': q2,
+                'Q3 (75%)': q3
+            })
+
             if df_proc.shape[0] < 50 or df_proc['NIVEL_RISCO'].nunique() < 2:
                 print("⚠️ Dataset insuficiente ou com poucas classes. Pulando arquivo.")
                 continue
@@ -341,7 +301,6 @@ def main():
                 metrica['Modelo'] = nome_modelo
                 resultados_gerais.append(metrica)
 
-                # 4️⃣ Coletar importâncias (se disponíveis)
                 if 'FeatureImportance' in m and not m['FeatureImportance'].empty:
                     imp = m['FeatureImportance'].copy()
                     imp['Arquivo'] = os.path.basename(f)
@@ -357,13 +316,10 @@ def main():
     # ------------------ CONSOLIDAÇÃO FINAL ------------------
 
     if not resultados_gerais:
-        print("\n" + "="*60)
-        print("⚠️ Nenhum resultado foi gerado — verifique os arquivos de entrada.")
-        print("="*60)
+        print("\n⚠️ Nenhum resultado foi gerado — verifique os arquivos.")
         return
 
     df_result_final = pd.DataFrame(resultados_gerais)
-    # Reordenar colunas para melhor visualização
     col_order = ['Arquivo', 'Modelo', 'Accuracy', 'F1-score (weighted)', 'ROC-AUC (weighted, ovr)', 'Precision (weighted)', 'Recall (weighted)']
     df_result_final = df_result_final.reindex(columns=col_order).sort_values(
         by=['Arquivo', 'ROC-AUC (weighted, ovr)'], ascending=[True, False]
@@ -372,16 +328,23 @@ def main():
     output_metrics = os.path.join(OUTPUT_DIR_ANALISE, 'metricas_classificacao_QUARTIS_CONSOLIDADO.csv')
     df_result_final.to_csv(output_metrics, sep=';', index=False, encoding='utf-8')
 
-    print("\n📊 RESULTADOS CONSOLIDADOS DE TODOS OS ARQUIVOS:\n")
+    print("\n📊 RESULTADOS CONSOLIDADOS:\n")
     print(df_result_final[['Arquivo', 'Modelo', 'Accuracy', 'F1-score (weighted)', 'ROC-AUC (weighted, ovr)']]
           .to_markdown(index=False))
 
-    # Consolidação das importâncias
     if importancias_gerais:
         df_import_final = pd.concat(importancias_gerais, ignore_index=True)
         output_importance = os.path.join(OUTPUT_DIR_ANALISE, 'IMPORTANCE_FEATURES_CONSOLIDADO.csv')
         df_import_final.to_csv(output_importance, sep=';', index=False)
         print(f"\n📁 Importância de Features consolidada salva em: {output_importance}")
+
+    # 🔶 NOVO: salvar tabela de quartis
+    if medianas_por_dataset:
+        df_quartis = pd.DataFrame(medianas_por_dataset)
+        output_quartis = os.path.join(OUTPUT_DIR_ANALISE, 'quartis_por_dataset.csv')
+        df_quartis.to_csv(output_quartis, sep=';', index=False, encoding='utf-8')
+        print(f"\n📁 Tabela de quartis salva em: {output_quartis}")
+        print(df_quartis.to_markdown(index=False))
 
     print(f"\n📁 Métricas consolidadas salvas em: {output_metrics}")
     print("\n✅ Análise de Classificação Concluída com sucesso!")
