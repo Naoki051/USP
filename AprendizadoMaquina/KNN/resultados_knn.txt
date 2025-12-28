@@ -1,0 +1,17 @@
+
+--- RELATORIO DE DESEMPENHO KNN (K=3) ---
+Tempo de Execucao Total: 9.0000 ms
+
+Matriz de Confusao (Linha: Real | Coluna: Previsto):
+R\P |  0  |  1  |  2  
+---------------------
+ 0  |  67 |   0 |   0 |
+ 1  |   0 |  66 |   0 |
+ 2  |   0 |   0 |  67 |
+
+Acuracia Global: 100.00%
+
+Classe 0 -> Precisao: 1.00 | Recall: 1.00 | F1-Score: 1.00
+Classe 1 -> Precisao: 1.00 | Recall: 1.00 | F1-Score: 1.00
+Classe 2 -> Precisao: 1.00 | Recall: 1.00 | F1-Score: 1.00
+------------------------------------------

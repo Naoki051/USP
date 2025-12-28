@@ -1,0 +1,16 @@
+
+--- RELATORIO DE DESEMPENHO: K-MEANS NAO SUPERVISIONADO ---
+Tempo Total de Processamento: 6.0000 ms
+
+Matriz de Confusao (Mapeada):
+R\P |  0  |  1  |  2  
+---------------------
+ 0  | 334 |   0 |   0 |
+ 1  |  88 | 245 |   0 |
+ 2  |   0 |  20 | 313 |
+
+Acuracia Global: 89.20%
+
+Classe 0 -> Precisao: 0.79 | Recall: 1.00 | F1-Score: 0.88
+Classe 1 -> Precisao: 0.92 | Recall: 0.74 | F1-Score: 0.82
+Classe 2 -> Precisao: 1.00 | Recall: 0.94 | F1-Score: 0.97
