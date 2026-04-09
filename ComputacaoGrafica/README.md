@@ -1,92 +1,117 @@
-# Motor Gráfico 3D - Arquitetura ECS
+# Motor Gráfico 3D — ECS (Python + OpenGL)
 
-Este é um motor gráfico 3D didático desenvolvido em **Python** utilizando **Pygame** e **OpenGL**. O projeto utiliza a arquitetura **Entity Component System (ECS)**, garantindo um desacoplamento rigoroso entre dados e lógica.
+Um motor gráfico 3D educacional desenvolvido em **Python**, utilizando **Pygame + PyOpenGL**, com arquitetura baseada em **Entity Component System (ECS)**.
 
-## 🚀 Funcionalidades
-
-- **Renderização 3D:** Suporte dinâmico a Cubo, Esfera e Tetraedro.
-- **Arquitetura Modular (ECS):** Sistemas independentes para Input, Câmera, Luz, Geometria e Material.
-- **Iluminação Dinâmica:** Fonte de luz móvel com cálculos de iluminação ambiente, difusa e especular.
-- **Câmera Orbital:** Rotação via mouse, Zoom via Scroll e Pan (translação) via setas.
-- **Configuração Centralizada:** Ajuste de materiais e constantes de luz via `config.py`.
+O objetivo do projeto é demonstrar, de forma prática, conceitos de **computação gráfica moderna**, **arquitetura de engines** e **desacoplamento de sistemas**.
 
 ---
 
-## 🛠️ Requisitos e Instalação
+## 🛠️ Funcionalidades
 
-### Python Recomendado
-Recomenda-se o uso do **Python 3.10 ou 3.11** para garantir compatibilidade total com as bibliotecas gráficas.
+### Renderização 3D
+* Cubo, Esfera e Tetraedro.
+* Geometrias procedurais e configuráveis.
+* Pipeline de renderização baseado em OpenGL.
 
-### Dependências
-As versões abaixo são necessárias para a estabilidade do contexto OpenGL:
-- **pygame**: 2.6.1
-- **PyOpenGL**: 3.1.10
-- **PyOpenGL-accelerate**: 3.1.10
+### Arquitetura ECS
+* Entidades totalmente desacopladas.
+* Componentes de dados puros (Dataclasses).
+* Sistemas independentes de processamento.
 
-### Como Instalar (Apenas esta pasta)
+### Iluminação Dinâmica
+* Cálculos de luz ambiente, difusa e especular (Phong Shading).
+* Fonte de luz móvel em tempo real.
 
-Como este projeto faz parte de um repositório acadêmico maior, você pode clonar apenas a pasta `ComputacaoGrafica` usando o comando abaixo:
+### Câmera Orbital
+* Rotação com mouse (drag).
+* Zoom com scroll.
+* Pan com teclado (setas).
 
-1. **Inicialize o repositório local:**
-   ```bash
-   mkdir USP-Grafica && cd USP-Grafica
-   git init
-   git remote add origin https://github.com/Naoki051/USP.git
-   ```
+---
 
-2. **Configure o Sparse Checkout:**
-   ```bash
-   git config core.sparseCheckout true
-   echo "ComputacaoGrafica/*" >> .git/info/sparse-checkout
-   ```
+## ⚙️ Instalação e Execução
 
-3. **Baixe os arquivos da branch correta:**
-   ```bash
-   git pull origin eps-usp
-   cd ComputacaoGrafica
-   ```
+### Requisitos
+* Python **3.10 ou 3.11** (recomendado para compatibilidade com OpenGL-accelerate).
+* Bibliotecas: `pygame`, `PyOpenGL`, `PyOpenGL-accelerate`, `numpy`.
 
-4. **Ambiente Virtual e Dependências:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/macOS ou venv\Scripts\activate no Windows
-   pip install -r requirements.txt
-   ```
+### 1. Clonando e Acessando o Projeto
+```bash
+git clone https://github.com/Naoki051/USP.git
+cd USP/ComputacaoGrafica
+```
+
+### 2. Ambiente Virtual e Dependências
+
+**macOS / Linux:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Windows:**
+```bash
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 3. Executando o Motor
+```bash
+python main.py
+```
 
 ---
 
 ## 🎮 Controles
 
-| Tecla/Mouse | Ação |
-| :--- | :--- |
-| **Mouse Esq. (Drag)** | Rotacionar a câmera (Órbita) |
-| **Mouse Wheel** | Zoom (In/Out) |
-| **Setas (L/R/U/D)** | Pan (Mover câmera nos eixos X e Y) |
-| **W, A, S, D** | Mover posição da Luz (Eixos X e Y) |
-| **Q, E** | Mover posição da Luz (Eixo Z) |
-| **Tecla 1** | Instanciar **Cubo** (Cor: Vermelho) |
-| **Tecla 2** | Instanciar **Esfera** (Cor: Verde) |
-| **Tecla 3** | Instanciar **Tetraedro** (Cor: Azul) |
-| **Tecla C** | Aplicar **Cor Aleatória** ao material atual |
+| Entrada      | Ação                      |
+| ------------ | ------------------------- |
+| Mouse (drag) | Rotação da câmera         |
+| Scroll       | Zoom                      |
+| Setas        | Pan da câmera             |
+| **W A S D** | Movimentação da luz (X/Y) |
+| **Q E** | Movimentação da luz (Z)   |
+| **1** | Instanciar Cubo           |
+| **2** | Instanciar Esfera         |
+| **3** | Instanciar Tetraedro      |
+| **C** | Cor aleatória             |
 
 ---
 
-## 📂 Estrutura do Projeto (ECS)
+## 🏗️ Arquitetura do Projeto (ECS)
 
-O projeto segue a separação estrita de responsabilidades:
+### Estrutura de Pastas
+```
+core/        → Engine ECS (EntityManager e gerenciamento base)
+components/  → Dados puros (Transform, Light, Material, etc.)
+systems/     → Lógica de processamento (Render, Input, Camera, etc.)
+main.py      → Loop principal da aplicação e orquestração
+```
 
-- **`core/`**: Contém o `EntityManager`, o "cérebro" que gerencia a criação e busca de componentes.
-- **`components/`**: Dataclasses que armazenam apenas dados puros (Posição, Cor, Vértices).
-- **`systems/`**: Lógica de processamento. Cada sistema atua sobre um grupo específico de componentes (ex: `LightSystem` move apenas entidades com `LightComponent`).
-- **`main.py`**: Ponto de entrada que orquestra o loop principal e a comunicação entre os sistemas através de um `InputStateComponent`.
+### Filosofia do Sistema
+* **Components:** Não possuem lógica, apenas armazenamento de estado.
+* **Systems:** Não armazenam estado persistente, apenas processam entidades que possuem os componentes necessários.
+* **Entities:** São apenas IDs numéricos que agrupam componentes.
 
 ---
 
 ## 📝 Notas Técnicas
-* **Winding Order:** O tetraedro foi implementado com ordem de vértices anti-horária para garantir o funcionamento correto do *Back-face Culling*.
-* **Modularidade:** A adição de novas formas geométricas requer apenas a atualização do `GeometrySystem`, sem necessidade de alterar o motor de renderização.
+
+### Geometria e Renderização
+* **Winding Order:** Tetraedro implementado com ordem anti-horária para suporte correto a *Back-face Culling*.
+* **Topologia:** Renderizador dinâmico com suporte automático a faces triangulares e quadriláteros.
+
+### Extensibilidade
+Para adicionar novas geometrias, o design permite:
+1. Definir os novos dados (vértices/faces) no `GeometrySystem`.
+2. Registrar a nova primitiva.
+3. **Nenhuma alteração** é necessária no `RenderSystem`, mantendo o código de desenho protegido.
 
 ---
 
-### Autor
-Desenvolvido por **Henrique Naoki Teruya** como parte dos estudos de Computação Gráfica na **USP**.
+## 👨‍💻 Autor
+
+Desenvolvido por **Henrique Naoki Teruya**.
+Projeto acadêmico de **Computação Gráfica — USP**.
