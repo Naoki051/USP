@@ -1,0 +1,81 @@
+//--------------------------------------------------------------
+// COLOQUE OS NOMES DOS RESPONSÁVEIS AQUI: blablabla E blablabla
+//--------------------------------------------------------------
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <malloc.h>
+
+// INFORME O NRO DO GRUPO CONFORME PLANILHA DIVULGADA
+int grupo() {
+  return 0;
+}
+
+// ######### ESCREVA O NROUSP AQUI
+int nroUSP1() {
+    return 0;
+}
+
+// E O SEGUNDO NROUSP AQUI, SE HOUVER
+int nroUSP2() {
+    return 0;
+}
+
+// elemento da lista de resposta - NAO ALTERE ESTA DEFINICAO
+typedef struct estr {
+      int adj; // elemento do caminho
+      struct estr *prox;
+} NO;
+
+
+// funcao principal
+NO *caminho(int N, int A, int ijpeso[], int ganhos[], int início, int fim, int* dinheiro);
+
+//------------------------------------------
+// O EP consiste em implementar esta funcao
+// e outras funcoes auxiliares que esta
+// necessitar
+//------------------------------------------
+NO *caminho(int N, int A, int ijpeso[], int ganhos[], int início, int fim, int* dinheiro)
+{
+	NO* resp = NULL;
+
+	// seu codigo AQUI
+
+	//...
+
+	return resp;
+}
+
+
+
+//---------------------------------------------------------
+// use main() para fazer chamadas de teste ao seu programa
+//---------------------------------------------------------
+int main() {
+
+
+	// aqui vc pode incluir codigo de teste - mas não precisa entregar isso
+
+	// exemplo de teste trivial
+
+	int N=3; // grafo de 3 vértices numerados de 1..3
+	int ganhos[] = {10, 5, 15}; // o ganho em cada cidade 
+
+	// ao criar o grafo, lembre-se de criar um vetor de vertices de tamanho N+1
+	// e despreze o indice zero do vetor
+
+	int A = 3; // 3 arestas 
+	int ijpeso[] = {1,2,10, 2,3,20, 3,1,10};
+
+	int inicio = 1;
+	int fim = 3;
+	int dinheiro = 50;
+
+	// o EP sera testado com uma serie de chamadas como esta
+	NO* teste = null;
+	teste = caminho(N, A, ijpeso, ganhos, inicio, fim, &dinheiro);
+
+}
+
+// por favor nao inclua nenhum código abaixo da função main()
